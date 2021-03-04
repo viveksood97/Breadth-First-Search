@@ -2,8 +2,37 @@ import pygame
 import numpy as np
 import time
 import copy
+import math
 import argparse
 from matplotlib import pyplot as plt
+
+
+def obstacleOrNot(node):
+    x = node[0]
+    y = node[1]
+    #circle
+    if((x-90)**2 + (y-70)**2 - 35**2 < 0): #circle
+        return False
+    
+    # tilted Rectangle
+    elif((8604*x - 12287*y + 914004 < 0) and (81900*x +59350*y-25510527 < 0) and (86036*x - 122870*y + 12140167 > 0) and (8192*x + 5735*y - 1012596 > 0)):
+        return False
+    
+    # C shaped Polygon
+    elif((x >= 200 and x <= 210 and y <= 280 and y >=230 ) or (x>= 210 and x <= 230 and y >=270 and y <= 280) or (y >= 230 and y <= 240 and x >= 210 and x <= 230)):
+        return False
+    
+    # ellipse
+    elif((((x-246)/60))**2 + (((y-145)/30))**2 - 1 < 0):
+        return False
+    
+    # crooked polygon
+    elif(((x-y-265<=0) and (x+y-391>=0) and (5*x+5*y-2351<=0) and (50*x-50*y-9007>=0)) or ((5*x+5*y-2351>=0) and (703*x+2883*y-646716<0) and (x+y-492<=0) and (x-y-265<=0)) or ((x+y-492>=0) and (x-y-265<=0) and (x<=381.03) and (1101*x-901*y-265416>0))):#                   (x<381.03) and (1101*x-901*y-265416>0) and (703*x+2883*y-646716<0) and (50*x-50*y-9007>0) and ):
+        return False
+
+    else:
+        return True
+    
 
 class PriorityQueue:
     """
@@ -14,7 +43,7 @@ class PriorityQueue:
 
     """
 
-    def __init__(self, node):
+    def __init__(self, node, goalPoint):
         """
         Initialize a PriorityQueue object corresponding to a
         test-case.
@@ -30,6 +59,7 @@ class PriorityQueue:
         """
         self.queue = [node]
         self.priorityList = [1]
+        self.goalPoint = goalPoint
 
     def extentOfArrangement(self, node):
         """
@@ -42,10 +72,8 @@ class PriorityQueue:
         Returns: Priority of the input node
 
         """
-        priority = 0
-        # for index, element in enumerate(node):
-        #     if((index + 1) == element):
-        #         priority += 1
+        
+        priority = -1*math.sqrt((node[0]-self.goalPoint[0])**2 + (node[1]-self.goalPoint[1])**2)
         return priority
 
     def insert(self, node):
@@ -78,63 +106,145 @@ class PriorityQueue:
         return self.queue.pop(indexOfMaximumPriority)
 
 
-def notOncircle(x,y):
-    if((x-90)**2 + (y-70)**2 - 35**2 < 0):
-        return False
-    else:
-        return True
-
-def notOntiltedRectangle(x,y):
-    if((8604*x - 12287*y + 914004 < 0) and (81900*x +59350*y-25510527 < 0) and (86036*x - 122870*y + 12140167 > 0) and (8192*x + 5735*y - 1012596 > 0)):
-        return False
-    else:
-        return True
 
 
-def notOnCSquare(x,y):
-    if((x >= 200 and x <= 210 and y <= 280 and y >=230 ) or (x>= 210 and x <= 230 and y >=270 and y <= 280) or (y >= 230 and y <= 240 and x >= 210 and x <= 230)):
-        return False
-    else:
-        return True
-
-
-def notOnEllipse(x,y):
-    if((((x-246)/60))**2 + (((y-145)/30))**2 - 1 < 0):
-        return False
-    else:
-        return True
-
-
-def notOnPolygon(x,y):
-    if(((x-y-265<=0) and (x+y-391>=0) and (5*x+5*y-2351<=0) and (50*x-50*y-9007>=0)) or ((5*x+5*y-2351>=0) and (703*x+2883*y-646716<0) and (x+y-492<=0) and (x-y-265<=0)) or ((x+y-492>=0) and (x-y-265<=0) and (x<=381.03) and (1101*x-901*y-265416>0))):#                   (x<381.03) and (1101*x-901*y-265416>0) and (703*x+2883*y-646716<0) and (50*x-50*y-9007>0) and ):
-        return False
-    else:
-        return True
-
-
-
-xPoint = []
-yPoint = []
-for x in range(0,400):
-    for y in range(0,300):
-        if (notOncircle(x,y) and notOnCSquare(x,y) and notOnEllipse(x,y) and notOntiltedRectangle(x,y) and notOnPolygon(x,y)):
-            xPoint.append(x)
-            yPoint.append(y)
             
 
 class MovePoint:
-    def __init__(self, startPoint, goalPoint):
+
+    def __init__(self, startPoint, goalPoint, size, visited):
+        self.goalPoint = goalPoint
+        self.queue = [startPoint]
+        #self.queue = PriorityQueue(startPoint,goalPoint)
+        self.size = size
+        self.visited = visited
+        self.visited[startPoint] = 0
+
+    def pointProcessor(self):
+        queue = self.queue
+        size = self.size
+        goalPoint = self.goalPoint
+        visited = self.visited
+        #popping an element from the queue
+        #node = queue.extract()
+        node = queue.pop(0)
+        # print(node)
+        if(obstacleOrNot(node) and node[0] > 0):
+            left = (node[0]-1,node[1])
+            if(goalPoint == left):
+                return True
+
+            if(left not in visited):
+                visited[left] = 0
+                #queue.insert(left)
+                queue.append(left)
+
+        if(obstacleOrNot(node) and node[0]!=size[0]-1):
+            right = (node[0]+1,node[1])
+            if(goalPoint == right):
+                return True
+            
+            if(right not in visited):
+                visited[right] = 0
+                #queue.insert(right)
+                queue.append(right)
+
+        if(obstacleOrNot(node) and node[1] != 0):
+            down = (node[0],node[1]-1)
+            if(goalPoint == down):
+                return True
+            
+            if(down not in visited):
+                visited[down] = 0
+                #queue.insert(down)
+                queue.append(down)
+
+        if(obstacleOrNot(node) and node[1]!=size[1]-1):
+            up = (node[0],node[1]+1)
+            if(goalPoint == up):
+                return True
+            
+            if(up not in visited):
+                visited[up] = 0
+                #queue.insert(up)
+                queue.append(up)
+
+        if(obstacleOrNot(node) and node[0] != 0 and node[1] != 0):
+            bottomLeft = (node[0]-1,node[1]-1)
+            if(goalPoint == bottomLeft):
+                return True
+
+            if(bottomLeft not in visited):
+                
+                visited[bottomLeft] = 0
+                #queue.insert(bottomLeft)
+                queue.append(bottomLeft)
+
+        if(obstacleOrNot(node) and node[0] != 0 and node[1] != size[1]-1):
+            topLeft = (node[0]-1,node[1]+1)
+            if(goalPoint == topLeft):
+                return True
+
+            if(topLeft not in visited):
+                visited[topLeft] = 0
+                #queue.insert(topLeft)
+                queue.append(topLeft)
+
+        if(obstacleOrNot(node) and node[0] != size[0]-1 and node[1] != 0):
+            bottomRight = (node[0]+1,node[1]-1)
+            if(goalPoint == bottomRight):
+                return True
+
+            if(bottomRight not in visited):
+                
+                visited[bottomRight] = 0
+                #queue.insert(bottomRight)
+                queue.append(bottomRight)
+
+        if(obstacleOrNot(node) and node[0] != size[0]-1 and node[1] != size[1]-1):
+            topRight = (node[0]+1,node[1]+1)
+            if(goalPoint == topRight):
+                return True
+
+            if(topRight not in visited):
+                
+                visited[topRight] = 0
+                #queue.insert(topRight)
+                queue.append(topRight)
+
         
-        self.startPoint = visited
-        self.results = []
 
-        # Generating the goal node
-        self.goal = np.append(np.array([i for i in range(1, size)]), 0)
+        return False  
 
-        # Calculation the size of puzzle.
-        self.size = np.sqrt(size
+def main():
+
+    move = MovePoint((0,0),(314,142),(400,300),{})  
+    flag = False
+    count = 0
+    while(not flag):
+        count += 1
+        flag = move.pointProcessor()
+
+    xPoint = []
+    yPoint = []
+    for x in range(0,400):
+        for y in range(0,300):
+            if not(obstacleOrNot((x,y))):
+                xPoint.append(x)
+                yPoint.append(y)
+
+    print(count)
+    plt.scatter(xPoint,yPoint,s=0.1)
+    plt.scatter(*zip(*move.visited.keys()),s=0.2)
+    plt.show()
+    
+
+if __name__ == '__main__':
+    main()
 
 
+
+        
 
 
 
@@ -145,8 +255,7 @@ class MovePoint:
 
 # print(xPoint)
 # print(yPoint)
-plt.scatter(xPoint, yPoint,s=0.2)
-plt.show()
+# 
 
 
 
