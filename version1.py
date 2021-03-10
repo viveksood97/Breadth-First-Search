@@ -1,16 +1,26 @@
 import pygame
-import numpy as np
 import time
-import copy
 import math
-import argparse
 from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 
-def obstacleOrNot(node):
-    x = node[0]
-    y = node[1]
+
+def obstacleOrNot(point):
+    """
+        Check whether the point is inside or outside the
+        defined obstacles.
+
+        Note: The obstacles have been defined using half 
+        plane method
+
+
+        Input: point/testCase(tuple)
+
+        Return: Boolean(True or False)
+
+    """
+    x = point[0]
+    y = point[1]
     #circle
     if((x-90)**2 + (y-70)**2 - 35**2 < 0): #circle
         return False
@@ -35,13 +45,45 @@ def obstacleOrNot(node):
         return True
 
 class Queue:
+    """
+        Class to duplicate functionality of queue data-
+        structure
+
+        Maintains a list of nodes
+
+    """
     def __init__(self, node):
+        """
+        Initialize a Queue object corresponding to a
+        test-case.
+
+        Input: point/testCase(tuple)
+
+        Return: None
+
+        """
         self.queue = [node]
 
     def insert(self, node):
+        """
+        Insert a point in back of the queue.
+
+        Input: self,testCase/point
+
+        Returns: None
+
+        """
         self.queue.append(node)
 
     def extract(self):
+        """
+        Pop a point from the queue.
+
+        Input: None
+
+        Returns: point(tuple)
+
+        """
         return self.queue.pop(0)
 
 class CustomPriorityQueue:
@@ -62,7 +104,7 @@ class CustomPriorityQueue:
         and the priorityList is given a priority of 1(any
         value works) for the testcase provided.
 
-        Input: node/testCase(np.array)
+        Input: point(tuple)
 
         Return:
 
@@ -71,15 +113,14 @@ class CustomPriorityQueue:
         self.priorityList = [1]
         self.goalPoint = goalPoint
 
-    def extentOfArrangement(self, node):
+    def priority(self, node):
         """
-        Generate a priority number for each node by the extent of
-        arrangement i.e., checking the distance from current node
-        to the goal node.
+        Generate a priority number for each node by the distance of point
+        from the goalpoint
 
-        Input: self,testCase/node
+        Input: self,point(tuple)
 
-        Returns: Priority of the input node
+        Returns: Priority of the point(float)
 
         """
         
@@ -89,26 +130,26 @@ class CustomPriorityQueue:
     def insert(self, node):
         """
         Insert an element in the queue and also store its
-        priority generated using the extentOfArrangement.
+        priority generated using the priority.
 
-        Input: self,testCase/node
+        Input: self,point
 
-        Returns:
+        Returns: None
 
         """
-        priority = self.extentOfArrangement(node)
+        priority = self.priority(node)
         self.queue.append(node)
         self.priorityList.append(priority)
 
     def extract(self):
         """
-        Pop a testCase/node which has the max priority
+        Pop a point which has the max priority
         from the queue.
 
-        Input:
+        Input: None
 
         Returns: The node with the maximum
-        priority(np.array)
+        priority(tuple)
 
         """
         indexOfMaximumPriority = self.priorityList.index(max(self.priorityList))
@@ -119,13 +160,31 @@ class CustomPriorityQueue:
 
 
 class MovePoint:
+    """
+    Class that is used to do decide point moving opeartion
+    and processing which includes generating possible moves for the
+    point.
+
+    """
 
     def __init__(self, startPoint, goalPoint, size,algo):
+        """
+        Initialize the MovePoint object corresponding to a
+        start point, goal point, size of arena and the algorithm 
+        to use.
+        
+
+        Input: startPoint(tuple), endPoint(tuple),
+        size(tuple), algo(str)
+
+        Return: None
+
+        """
         self.goalPoint = goalPoint
         self.algo = algo
-        if(algo == "q"):
+        if(algo == 1):
             self.queue = Queue(startPoint)
-        elif(algo == "pq"):
+        elif(algo == 2):
             self.queue = CustomPriorityQueue(startPoint,goalPoint)
         self.size = size
         self.visited = {}
@@ -133,6 +192,15 @@ class MovePoint:
         
     
     def nodeOperation(self, node, moveCost, *args, **kwargs):
+        """
+        Generate the next node based on the operation and
+        the node
+
+        Input: node/point(tuple), moveCost(float),
+        *args(list), **kwargs(dict)
+
+        Return: True/False(Bool)
+        """
         newNode = False
         obj = list(kwargs.keys())
         if(len(obj) == 1):
@@ -159,6 +227,15 @@ class MovePoint:
        
 
     def pointProcessor(self):
+        """
+        Process the point moving operation and check if the
+        goal node is achived or not.
+
+        Input: self
+
+        Return: True/False(Bool)
+
+        """
         queue = self.queue
 
         size = self.size
@@ -204,6 +281,14 @@ class MovePoint:
         return False
 
     def backTrace(self,startPoint):
+        """
+        Back trace the path from goal point to start point
+
+        Input: self,startPoint(tuple)
+
+        Return: backTraceArr(list)
+
+        """
         goalPoint = self.goalPoint
 
         visited = self.visited
@@ -222,39 +307,61 @@ def to_pygame(coords):
     return (coords[0], 300 - coords[1])
 
 def main():
+    print("\n")
+    print(r"""    ____        __  __       ____  __                           
+   / __ \____ _/ /_/ /_     / __ \/ /___ _____  ____  ___  _____
+  / /_/ / __ `/ __/ __ \   / /_/ / / __ `/ __ \/ __ \/ _ \/ ___/
+ / ____/ /_/ / /_/ / / /  / ____/ / /_/ / / / / / / /  __/ /    
+/_/    \__,_/\__/_/ /_/  /_/   /_/\__,_/_/ /_/_/ /_/\___/_/     
+                                                                
+""")
+    
+    x1 = int(input("\nEnter the x coordinate of the start point: "))
+    y1 = int(input("Enter the y coordinate of the start point: "))
+
+    x2 = int(input("Enter the x coordinate of the goal point: "))
+    y2 = int(input("Enter the y coordinate of the goal point: "))
+    print("\n")
+    
     start = time.time()
-    startPoint = (0,0)
-    endPoint = (212,266)
+    startPoint = (x1,y1)
+    endPoint = (x2,y2)
     arenaSize = (400,300)
 
-    if((not obstacleOrNot(startPoint)) or (startPoint[0] > arenaSize[0]) or (startPoint[1] > arenaSize[0])):
+    if((not obstacleOrNot(startPoint)) or (startPoint[0] > arenaSize[0]) or (startPoint[1] > arenaSize[1])):
         outStr = "Error: Start Point either on/inside obstacle or outside specified arena"
         print("#"*len(outStr))
         print("\n"+outStr+"\n")
         print("#"*len(outStr))
+        print("\n")
         return False
-    if((not obstacleOrNot(endPoint)) or (endPoint[0] > arenaSize[0]) or (endPoint[1] > arenaSize[0])):
+    if((not obstacleOrNot(endPoint)) or (endPoint[0] > arenaSize[0]) or (endPoint[1] > arenaSize[1])):
         outStr = "Error: Goal either on/inside obstacle or outside specified arena"
         print("#"*len(outStr))
         print("\n"+outStr+"\n")
         print("#"*len(outStr))
+        print("\n")
         return False
 
-    algo = "q"
+    algo = int(input("Choose the algorithm that you desire to use \n 1. Enter 1 for Standard BFS\n 2. Enter 2 for Optimized BFS\n\nAnswer: "))
+    if(algo!= 1 and algo!= 2):
+        print("Error!!: Choose between option 1 or 2")
+        return False
+
     move = MovePoint(startPoint,endPoint,arenaSize,algo)  
     flag = False
-    count = 0
     while(not flag):
-        count += 1
         flag = move.pointProcessor()
     
     end = time.time()
-    print(end-start)
-    print(count)
+    finalOut = f"\nPath found in {round(end - start, 4)} seconds.\n"
+    print(finalOut)
     
     backTraceArr = move.backTrace(startPoint)
     
     pygame.init()
+
+    pygame.display.set_caption("Path Planner")
 
     white = (255,255,255)
     black = (0,0,0)
@@ -289,26 +396,22 @@ def main():
     
     while True:
         pygame.event.get()
-
         
         pygame.draw.circle(gameDisplay, black, to_pygame(endPoint),2)
         for key in move.visited.keys():
             pygame.draw.circle(gameDisplay, blue, to_pygame(key),1)
-            clock.tick(1000000)
+            clock.tick(10000000)
             pygame.display.update()
 
         for point in backTraceArr:
             pygame.draw.circle(gameDisplay, green, to_pygame(point),1)
-            clock.tick(200)
+            clock.tick(150)
             pygame.display.update()
 
         
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
         
-        time.sleep(5)
+        
+        time.sleep(3)
         pygame.quit()
         
         
